@@ -61,8 +61,11 @@ const estado = {
   qr: '',
   codigo: '',
   ultimoErro: '',
-  integracaoAtualizada: false
+  integracaoAtualizada: false,
+  integracaoCarregada: '',
+  integracaoVersao: ''
 }
+const INICIO = Date.now()
 
 let token = ''
 try {
@@ -78,6 +81,7 @@ function instalarIntegracao() {
   gravarJson(path.join(CONFIG_HA, '.zap_ha.json'), { url: 'http://127.0.0.1:' + PORTA_API, token })
   const destino = path.join(CONFIG_HA, 'custom_components', 'whatsapp')
   const novo = fs.readFileSync(path.join(INTEGRACAO, 'manifest.json'), 'utf8')
+  estado.integracaoVersao = JSON.parse(novo).version
   let atual = ''
   try {
     atual = fs.readFileSync(path.join(destino, 'manifest.json'), 'utf8')
@@ -85,7 +89,6 @@ function instalarIntegracao() {
   if (atual !== novo) {
     fs.rmSync(destino, { recursive: true, force: true })
     fs.cpSync(INTEGRACAO, destino, { recursive: true })
-    estado.integracaoAtualizada = true
     registro('integração copiada para', destino)
   }
   const yaml = path.join(CONFIG_HA, 'configuration.yaml')
@@ -97,7 +100,6 @@ function instalarIntegracao() {
   }
   if (!/^whatsapp:/m.test(texto)) {
     fs.writeFileSync(yaml, texto + (texto.endsWith('\n') ? '' : '\n') + '\nwhatsapp:\n')
-    estado.integracaoAtualizada = true
     registro('linha whatsapp: acrescentada ao configuration.yaml')
   }
 }
@@ -669,7 +671,10 @@ http
         return responder(res, 200, dados, MIMES[path.extname(nome).toLowerCase()] || 'application/octet-stream')
       }
       if (!tokenConfere(req)) return responder(res, 401, { ok: false, erro: 'token inválido' })
-      if (req.method === 'GET' && rota === '/status') return responder(res, 200, situacao())
+      if (req.method === 'GET' && rota === '/status') {
+        estado.integracaoCarregada = String(req.headers['x-zap-integracao'] || '')
+        return responder(res, 200, situacao())
+      }
       if (req.method === 'POST' && rota === '/enviar') {
         const r = await enviarEEsperar(await lerCorpo(req))
         return responder(res, r.ok ? 200 : 502, r)
@@ -693,7 +698,7 @@ http
           qr: estado.qr,
           codigo: estado.codigo,
           ultimoErro: estado.ultimoErro,
-          integracaoAtualizada: estado.integracaoAtualizada,
+          integracaoAtualizada: !!estado.integracaoVersao && estado.integracaoCarregada !== estado.integracaoVersao && (!!estado.integracaoCarregada || Date.now() - INICIO > 90000),
           historico
         })
       }

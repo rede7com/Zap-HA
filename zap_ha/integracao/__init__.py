@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 import aiohttp
 import voluptuous as vol
@@ -29,6 +30,14 @@ def _ler(caminho):
         return json.load(arquivo)
 
 
+def _versao():
+    with open(os.path.join(os.path.dirname(__file__), "manifest.json"), encoding="utf-8") as arquivo:
+        return json.load(arquivo)["version"]
+
+
+VERSAO = _versao()
+
+
 async def chamar(hass: HomeAssistant, metodo: str, rota: str, dados=None, espera: int = 30):
     try:
         cfg = await hass.async_add_executor_job(_ler, hass.config.path(ARQUIVO))
@@ -39,7 +48,7 @@ async def chamar(hass: HomeAssistant, metodo: str, rota: str, dados=None, espera
             metodo,
             cfg["url"] + rota,
             json=dados,
-            headers={"X-Zap-Token": cfg["token"]},
+            headers={"X-Zap-Token": cfg["token"], "X-Zap-Integracao": VERSAO},
             timeout=aiohttp.ClientTimeout(total=espera),
         ) as resposta:
             return await resposta.json(content_type=None)

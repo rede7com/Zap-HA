@@ -1,7 +1,7 @@
 {
   "domain": "whatsapp",
   "name": "Zap-HA",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/rede7com/Zap-HA",
   "codeowners": [],
   "dependencies": [],

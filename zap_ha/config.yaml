@@ -1,5 +1,5 @@
 name: "Zap-HA"
-version: "1.0.0"
+version: "1.0.1"
 slug: zap_ha
 description: "WhatsApp para o Home Assistant com Baileys: QR code ou código de pareamento, fila de envio com confirmação e evento de mensagem recebida"
 url: "https://github.com/rede7com/Zap-HA"
