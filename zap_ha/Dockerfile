@@ -1,5 +1,4 @@
-ARG BUILD_FROM=node:24-alpine
-FROM $BUILD_FROM
+FROM node:24-alpine
 
 ENV NODE_ENV=production
 WORKDIR /app
