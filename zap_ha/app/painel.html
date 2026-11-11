@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zap-HA</title>
+<style>
+:root { --fundo: #f4f6f5; --cartao: #ffffff; --texto: #17211c; --fraco: #5d6b64; --borda: #d9e0dc; --verde: #128c4b; --vermelho: #c0392b; --ambar: #a86a00; }
+@media (prefers-color-scheme: dark) {
+  :root { --fundo: #111614; --cartao: #1a211e; --texto: #e8efeb; --fraco: #9aa8a1; --borda: #2c3632; --verde: #3ecf7f; --vermelho: #ff7b6b; --ambar: #f0b34a; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 16px; background: var(--fundo); color: var(--texto); font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px; padding: 16px; }
+h1 { font-size: 1.3rem; margin: 0; }
+h2 { font-size: 1.05rem; margin: 0 0 12px; }
+p { margin: 0 0 12px; }
+.topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.selo { padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; font-weight: 600; font-size: .9rem; }
+.ok { color: var(--verde); }
+.ruim { color: var(--vermelho); }
+.meio { color: var(--ambar); }
+.fraco { color: var(--fraco); font-size: .9rem; }
+.duas { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+img.qr { width: 100%; max-width: 280px; height: auto; background: #fff; padding: 8px; border-radius: 8px; display: block; }
+label { display: block; font-weight: 600; margin-bottom: 4px; }
+input, textarea { width: 100%; padding: 10px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo); color: var(--texto); font: inherit; margin-bottom: 12px; }
+button { padding: 10px 16px; min-height: 44px; border: 0; border-radius: 8px; background: var(--verde); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+@media (prefers-color-scheme: dark) { button { color: #08130d; } }
+button.perigo { background: transparent; color: var(--vermelho); border: 1px solid var(--vermelho); }
+button:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 3px solid var(--ambar); outline-offset: 2px; }
+.codigo { font: 700 2rem/1.2 ui-monospace, monospace; letter-spacing: .12em; margin: 8px 0 12px; }
+.rolagem { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--borda); vertical-align: top; }
+td.msg { word-break: break-word; min-width: 180px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section class="topo">
+    <div>
+      <h1>Zap-HA</h1>
+      <div class="fraco" id="quem"></div>
+    </div>
+    <span class="selo meio" id="selo" role="status" aria-live="polite">carregando</span>
+  </section>
+
+  <section id="aviso" hidden>
+    <p class="meio"><strong>Reinicie o Home Assistant.</strong> A integração foi instalada ou atualizada e só carrega depois do reinício.</p>
+  </section>
+
+  <section id="parear" hidden>
+    <h2>Parear o WhatsApp</h2>
+    <div class="duas">
+      <div>
+        <p>No celular: WhatsApp, Aparelhos conectados, Conectar um aparelho, e aponte para o código.</p>
+        <img class="qr" id="qr" alt="QR code de pareamento" hidden>
+        <p class="fraco" id="semqr">Gerando o QR code…</p>
+      </div>
+      <form id="formnumero">
+        <p>Ou conecte pelo número: digite o número com DDI e DDD e use o código em “Conectar com número de telefone”.</p>
+        <label for="numero">Número</label>
+        <input id="numero" inputmode="numeric" autocomplete="off" placeholder="55 31 9 0000 0000" required>
+        <button type="submit">Gerar código</button>
+        <div class="codigo" id="codigo" aria-live="polite"></div>
+        <p class="ruim" id="erropar" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="ligado" hidden>
+    <h2>Mensagem de teste</h2>
+    <form id="formteste">
+      <label for="destino">Destino (número com DDI e DDD ou id do grupo)</label>
+      <input id="destino" autocomplete="off" required>
+      <label for="texto">Mensagem</label>
+      <textarea id="texto" rows="2" required>Teste do Zap-HA</textarea>
+      <button type="submit">Enviar</button>
+      <span class="fraco" id="resteste" aria-live="polite"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Últimas mensagens</h2>
+    <div class="rolagem">
+      <table>
+        <thead><tr><th>Hora</th><th>Sentido</th><th>Com</th><th>Mensagem</th><th>Estado</th></tr></thead>
+        <tbody id="linhas"></tbody>
+      </table>
+    </div>
+    <p class="fraco" id="vazio">Nenhuma mensagem desde que o add-on iniciou.</p>
+  </section>
+
+  <section id="sairbloco" hidden>
+    <h2>Trocar de número</h2>
+    <p class="fraco">Desconecta este aparelho do WhatsApp e volta para a tela de pareamento.</p>
+    <button class="perigo" id="sair" type="button">Desconectar e parear de novo</button>
+  </section>
+</main>
+<script>
+const el = id => document.getElementById(id)
+const nomes = { conectado: 'conectado', conectando: 'conectando', reconectando: 'reconectando', aguardando_pareamento: 'aguardando pareamento', iniciando: 'iniciando' }
+
+async function chamar(rota, corpo) {
+  const r = await fetch(rota, corpo ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) } : undefined)
+  return r.json()
+}
+
+function celula(tr, texto, classe) {
+  const td = document.createElement('td')
+  td.textContent = texto
+  if (classe) td.className = classe
+  tr.appendChild(td)
+}
+
+async function atualizar() {
+  let e
+  try {
+    e = await chamar('api/estado')
+  } catch {
+    el('selo').textContent = 'add-on sem resposta'
+    el('selo').className = 'selo ruim'
+    return
+  }
+  const ligado = e.estado === 'conectado'
+  const pareando = e.estado === 'aguardando_pareamento'
+  el('selo').textContent = nomes[e.estado] || e.estado
+  el('selo').className = 'selo ' + (ligado ? 'ok' : pareando ? 'meio' : 'ruim')
+  el('quem').textContent = (e.numero ? '+' + e.numero + (e.nome ? ' · ' + e.nome : '') + ' · ' : '') + 'versão ' + e.versao + (e.fila ? ' · ' + e.fila + ' na fila' : '') + (!ligado && e.ultimoErro ? ' · ' + e.ultimoErro : '')
+  el('aviso').hidden = !e.integracaoAtualizada
+  el('parear').hidden = !pareando
+  el('ligado').hidden = !ligado
+  el('sairbloco').hidden = pareando
+  el('qr').hidden = !e.qr
+  el('semqr').hidden = !!e.qr
+  if (e.qr) el('qr').src = e.qr
+  el('codigo').textContent = e.codigo || ''
+  const corpo = el('linhas')
+  corpo.replaceChildren()
+  for (const h of e.historico) {
+    const tr = document.createElement('tr')
+    celula(tr, new Date(h.hora).toLocaleTimeString('pt-BR'))
+    celula(tr, h.dir === 'saiu' ? 'enviada' : 'recebida')
+    celula(tr, h.com || '')
+    celula(tr, h.texto || '', 'msg')
+    celula(tr, h.estado + (h.erro ? ': ' + h.erro : ''), h.estado === 'falhou' ? 'ruim' : '')
+    corpo.appendChild(tr)
+  }
+  el('vazio').hidden = e.historico.length > 0
+}
+
+el('formnumero').addEventListener('submit', async ev => {
+  ev.preventDefault()
+  el('erropar').textContent = ''
+  const r = await chamar('api/parear', { numero: el('numero').value }).catch(() => ({ erro: 'add-on sem resposta' }))
+  if (r.ok) el('codigo').textContent = r.codigo
+  else el('erropar').textContent = r.erro || 'não foi possível gerar o código'
+})
+
+el('formteste').addEventListener('submit', async ev => {
+  ev.preventDefault()
+  el('resteste').textContent = 'enviando…'
+  const r = await chamar('api/teste', { destino: el('destino').value, texto: el('texto').value }).catch(() => ({ erro: 'add-on sem resposta' }))
+  el('resteste').textContent = r.ok ? r.estado : 'falhou: ' + (r.erro || '')
+  atualizar()
+})
+
+el('sair').addEventListener('click', async () => {
+  if (!confirm('Desconectar este WhatsApp do Home Assistant?')) return
+  await chamar('api/sair', {}).catch(() => {})
+  atualizar()
+})
+
+atualizar()
+setInterval(atualizar, 2000)
+</script>
+</body>
+</html>

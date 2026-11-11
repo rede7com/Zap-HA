@@ -1,0 +1,10 @@
+{
+  "domain": "whatsapp",
+  "name": "Zap-HA",
+  "version": "1.0.0",
+  "documentation": "https://github.com/rede7com/Zap-HA",
+  "codeowners": [],
+  "dependencies": [],
+  "requirements": [],
+  "iot_class": "local_polling"
+}

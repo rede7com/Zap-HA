@@ -1,0 +1,79 @@
+send_message:
+  name: Enviar mensagem
+  description: Envia uma mensagem de texto pelo WhatsApp.
+  fields:
+    target:
+      name: Destino
+      description: Número com DDI e DDD ou id do grupo.
+      required: true
+      example: "5531900000000"
+      selector:
+        text:
+    message:
+      name: Mensagem
+      required: true
+      selector:
+        text:
+          multiline: true
+send_audio:
+  name: Enviar áudio
+  description: Envia um áudio a partir de um endereço. Com ptt ligado vai como mensagem de voz (ogg/opus).
+  fields:
+    target:
+      name: Destino
+      required: true
+      selector:
+        text:
+    url:
+      name: Endereço do áudio
+      required: true
+      selector:
+        text:
+    ptt:
+      name: Mensagem de voz
+      selector:
+        boolean:
+send_image:
+  name: Enviar imagem
+  description: Envia uma imagem a partir de um endereço.
+  fields:
+    target:
+      name: Destino
+      required: true
+      selector:
+        text:
+    url:
+      name: Endereço da imagem
+      required: true
+      selector:
+        text:
+    caption:
+      name: Legenda
+      selector:
+        text:
+send_document:
+  name: Enviar documento
+  description: Envia um arquivo a partir de um endereço.
+  fields:
+    target:
+      name: Destino
+      required: true
+      selector:
+        text:
+    url:
+      name: Endereço do arquivo
+      required: true
+      selector:
+        text:
+    file_name:
+      name: Nome do arquivo
+      selector:
+        text:
+    mimetype:
+      name: Tipo
+      selector:
+        text:
+    message:
+      name: Legenda
+      selector:
+        text:
